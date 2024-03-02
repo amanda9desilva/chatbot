@@ -12,21 +12,12 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain.callbacks import get_openai_callback
 import os
 import openai
- 
-# Sidebar contents
-with st.sidebar:
-    st.title('🤗💬 LLM Chat App')
-    st.markdown('''
-    ## About
-    This app is an LLM-powered chatbot built using:
-    - [Streamlit](https://streamlit.io/)
-    - [LangChain](https://python.langchain.com/)
-    - [OpenAI](https://platform.openai.com/docs/models) LLM model
- 
-    ''')
-    add_vertical_space(5)
-    st.write('Made with ❤️ by [Prompt Engineer](https://youtube.com/@engineerprompt)')
- 
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv()) # read local .env file
+
+openai.api_key  = os.environ['OPENAI_API_KEY']
+
+load_dotenv()
  
 def main():
     st.header("Chat with PDF 💬")
@@ -55,15 +46,12 @@ def main():
         st.write(f'{store_name}')
         # st.write(chunks)
  
-        if os.path.exists(f"{store_name}.pkl"):
+        if os.path.exists(f"/Users/amandadesilva/Desktop/repos/chatbot/{store_name}.pkl"):
             with open(f"{store_name}.pkl", "rb") as f:
                 VectorStore = pickle.load(f)
             # st.write('Embeddings Loaded from the Disk')s
         else:
-            embeddings = OpenAIEmbeddings(
-                deployment="text-embeddings-ada-002",
-                openai_api_key=os.environ['OPENAI_API_KEY']
-            )
+            embeddings = OpenAIEmbeddings()
             VectorStore = FAISS.from_texts(chunks, embedding=embeddings)
             with open(f"{store_name}.pkl", "wb") as f:
                 pickle.dump(VectorStore, f)
@@ -78,15 +66,7 @@ def main():
         if query:
             docs = VectorStore.similarity_search(query=query, k=3)
  
-            llm = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": query},
-                ],
-                temperature=0.7,
-                max_tokens=150,
-            )
+            llm = OpenAI()
             chain = load_qa_chain(llm=llm, chain_type="stuff")
             with get_openai_callback() as cb:
                 response = chain.run(input_documents=docs, question=query)
